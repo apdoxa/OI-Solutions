@@ -1,0 +1,16 @@
+{
+	"files.associations": {
+		"cmath": "cpp",
+		"complex": "cpp",
+		"any": "cpp",
+		"*.tcc": "cpp",
+		"algorithm": "cpp",
+		"random": "cpp",
+		"fstream": "cpp",
+		"istream": "cpp",
+		"regex": "cpp",
+		"utility": "cpp",
+		"*.inc": "cpp",
+		"iostream": "cpp"
+	}
+}
