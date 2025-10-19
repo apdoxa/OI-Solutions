@@ -1,142 +1,166 @@
 #include <bits/stdc++.h>
-using namespace std;
-#define li long long
-#define ft(x) for (int i = 1; i <= x; i++)
-li n, q, m;
-const li MAXN = 1e5 + 10;
-li arr[MAXN];
+#define ll long long
+#define ft(i, x) for (int i=1; i <= x; i++)
+const int MAXN = 1e5 + 10;
+ll arr[MAXN];
+ll n, q, mo;
 
-li d[MAXN * 4], lazyP[MAXN * 4], lazyMulti[MAXN * 4];
-
-void pd(li s, li t, li p)
-{
-	li m = s + ((t - s) >> 1);
-	if (lazyMulti[p]!=1 && s != t)
-	{
-		d[p * 2] =(d[p * 2] *lazyMulti[p])%m;
-		d[p * 2 + 1] =(d[p * 2] * lazyMulti[p])%m;
-
-		//乘法标记会影响加法标记
-		lazyMulti[p * 2] = lazyMulti[p];
-		lazyMulti[p * 2 + 1] = lazyMulti[p];
-		lazyMulti[p] = 1;
-
-
-	}
-	if(lazyP[p]&&s!=t){
-		//先乘法后加法以实现a*m+k。一个节点对应一个原数值的偏移和放缩，如果先加法则会改变乘法效果
-		d[p * 2] = (d[p * 2] +lazyP[p] * (m - s + 1))%m;
-		d[p * 2 + 1] = (d[p * 2+1] +lazyP[p] * (t - m))%m;
-
-		lazyP[p * 2] = (lazyP[p * 2]+lazyP[p])%m;
-		lazyP[p * 2 + 1] =(lazyP[p * 2+1]+ lazyP[p])%m;
-		lazyP[p] = 0;
-	}
-}
-
-void build(li s, li t, li p)
+ll dd[MAXN * 4], lazyP[MAXN * 4], lazyMul[MAXN * 4];
+void build(ll s, ll t, ll p)
 {
 	if (s == t)
 	{
-		d[p] = arr[s];
+		dd[p] = arr[s]%mo; // 单一节点
 		return;
 	}
-	lazyMulti[p]=1;
-	li m = s + ((t - s) >> 1);
+	lazyP[p]=0;
+	lazyMul[p] = 1;
+	ll m = s + ((t - s) >> 1);
 	build(s, m, p * 2), build(m + 1, t, p * 2 + 1);
-	d[p] = d[p * 2] + d[p * 2 + 1];
+	dd[p] = (dd[p * 2] + dd[p * 2 + 1])%mo;
 }
-li getSum(li l, li r, li s, li t, li p)
+void pd(ll s, ll t, ll p)
+{
+	ll m = s + ((t - s) >> 1);
+	// 有子树
+	if (s != t)
+	{
+		if (lazyMul[p] != 1)
+		{
+			// 有乘法标记，先处理(因为执行乘法操作的时候已经将加法标记放缩了)
+			// left
+			dd[p * 2] = (dd[p * 2] * lazyMul[p]) % mo;
+			lazyMul[p * 2] = (lazyMul[p * 2] * lazyMul[p]) % mo;
+			lazyP[p*2]=(lazyP[p*2]*lazyMul[p])%mo;
+			// right
+
+			dd[p * 2 + 1] = (dd[p * 2 + 1] * lazyMul[p]) % mo;
+			lazyMul[p * 2 + 1] = (lazyMul[p * 2 + 1] * lazyMul[p]) % mo;
+			lazyP[p*2+1]=(lazyP[p*2+1]*lazyMul[p])%mo;
+			lazyMul[p] = 1;
+		}
+		if (lazyP[p] != 0 )
+		{
+			// 有加法标记
+			// left
+			dd[p * 2] = (dd[p * 2] + lazyP[p] * (m - s + 1)) % mo;
+			lazyP[p * 2] =( lazyP[p * 2] + lazyP[p])%mo;
+
+			// right
+			dd[p * 2 + 1] = (dd[p * 2 + 1] + lazyP[p] * (t - m)) % mo;
+			lazyP[p * 2 + 1] = (lazyP[p * 2 + 1] + lazyP[p]) % mo;
+
+			lazyP[p] = 0;
+		}
+	}
+}
+//[l,r]查询区间,[s,t]当前区间 l<=s,t<=r
+ll getsum(ll l, ll r, ll s, ll t, ll p)
 {
 	if (l <= s && t <= r)
 	{
-		return d[p];
+		return dd[p];
 	}
-	li m = s + ((t - s) >> 1), sum = 0;
+
+	ll m = s + ((t - s) >> 1), sum = 0;
 	pd(s, t, p);
 
 	if (l <= m)
 	{
-		sum += getSum(l,r,s,m,p*2);
+		sum =( sum+getsum(l, r, s, m, p * 2))%mo;
 	}
 	if (r > m)
 	{
-		sum += getSum(l,r,m+1,t,p*2+1);
+		sum = (sum+ getsum(l, r, m + 1, t, p * 2 + 1))%mo;
 	}
+	return sum % mo;
+}
+// l s t r
+void upd_plus(ll l, ll r, ll s, ll t, ll p, ll k)
+{
+	if (l <= s && t <= r)
+	{
+		// 在区间内
+		dd[p] = (dd[p] + k * (t - s + 1)) % mo;
+		lazyP[p] = (lazyP[p] + k) % mo;
+		return;
+	}
+	ll m = s + ((t - s) >> 1);
+	pd(s, t, p);
+	if (l <= m)
+	{
+		upd_plus(l, r, s, m, p * 2, k);
+	}
+	if (r > m)
+	{
+		upd_plus(l, r, m + 1, t, p * 2 + 1, k);
+	}
+	dd[p] = (dd[p * 2] + dd[p * 2 + 1]) % mo;
+}
+// l s t r
+void upd_mul(ll l, ll r, ll s, ll t, ll p, ll k)
+{
+	
+	if (l <= s && t <= r)
+	{
+		// 在区间内
+		dd[p] = (dd[p] * k) % mo;
+		lazyMul[p] = (lazyMul[p] * k) % mo;
+				lazyP[p] = (lazyP[p] * k) % mo;
+		return;
+	}
+	pd(s, t, p);
+	ll m = s + ((t - s) >> 1);
 
-	return sum;
-}
-void upd_plus(li l, li r, li s, li t, li p, li num)
-{
-	if (l <= s && t <= r)
-	{
-		// 在区间内，直接修改
-		d[p] = (d[p]+num * (t - s + 1))%m;
-		lazyP[p] =  (lazyP[p]+num)%m;
-		return;
-	}
-	li m = s + ((t - s) >> 1);
-	pd(s, t, p);
 	if (l <= m)
 	{
-		upd_plus(l, r, s, m, p * 2, num);
+		upd_mul(l, r, s, m, p * 2, k);
 	}
 	if (r > m)
 	{
-		upd_plus(l, r, m+1, t, p * 2 + 1, num);
+		upd_mul(l, r, m + 1, t, p * 2 + 1, k);
 	}
-	d[p] = d[p * 2] + d[p * 2 + 1];
+	dd[p] = (dd[p * 2] + dd[p * 2 + 1])%mo;
 }
-void upd_Multi(li l, li r, li s, li t, li p, li num)
-{
-	if (l <= s && t <= r)
-	{ // 注意是s,t是l,r的子集，即l<=s,t<=r
-		// 在区间内，直接修改
-		d[p] = (d[p]*num)%m;
-		lazyMulti[p] =( lazyMulti[p] *num)%m;
-		return;
-	}
-	li m = s + ((t - s) >> 1);
-	pd(s, t, p);
-	if (l <= m)
-	{
-		upd_Multi(l, r, s, m, p * 2, num);
-	}
-	if (r > m)
-	{
-		upd_Multi(l, r, m+1, t, p * 2 + 1, num);
-	}
-	d[p] = (d[p * 2] + d[p * 2 + 1])%m;
-}
+using namespace std;
 int main()
 {
-	ios::sync_with_stdio(false);
-	cin.tie(nullptr);
 
-	cin >> n >> q >> m;
-	ft(n)
+	cin.tie(nullptr)->sync_with_stdio(false);
+	cin >> n >> q >> mo;
+
+	ft(i, n)
 	{
 		cin >> arr[i];
 	}
-	while (q--)
+	build(1,n,1);
+	ft(op, q)
 	{
-		li x, y, opcode;
-		cin >> opcode >> x >> y;
+		int opcode;
+		ll x, y;
+		cin >> opcode;
+
 		if (opcode == 1)
 		{
-			li k;
+			ll k;
+			cin >> x >> y;
 			cin >> k;
-			upd_Multi(x,y,1,n,1,k);
+			// mul k
+			upd_mul(x, y, 1, n, 1, k);
 		}
 		else if (opcode == 2)
 		{
-			li k;
+			ll k;
+			cin >> x >> y;
+			// plus k
 			cin >> k;
-			upd_plus(x,y,1,n,1,k);
+			upd_plus(x, y, 1, n, 1, k);
 		}
 		else if (opcode == 3)
 		{
-			cout << getSum(x, y, 1, n, 1) % m<<'\n';
+			cin >> x >> y;
+			// output
+			cout << getsum(x, y, 1, n, 1) << '\n';
 		}
 	}
 
