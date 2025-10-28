@@ -1,4 +1,3 @@
-// TODO: review
 // BFS（或DFS）+ 连通块标记 + 记忆化
 #include <bits/stdc++.h>
 using namespace std;
@@ -8,7 +7,6 @@ int compent[1001][1001];
 int dirs[4][2] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 int compent_idx = 0;
 unordered_map<int, int> com_size;
-
 void bfs(int x, int y, int com_idx)
 {
 	queue<pair<int, int>> q;
